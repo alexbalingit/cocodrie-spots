@@ -18,14 +18,13 @@
 <script>
 // ["Name", parkLat, parkLng, waterLat, waterLng] — SAME ORDER as index.html spots[].
 const SP=[
- ["Boudreaux Canal Public Launch (Chauvin)",29.39200,-90.61100,29.39150,-90.61200],
- ["Bayou Petit Caillou Public Ramp (Chauvin)",29.33000,-90.62800,29.32960,-90.62860],
- ["Sportsman’s Paradise (Chauvin)",29.36000,-90.62200,29.35960,-90.62280],
- ["Lapeyrouse / Robinson Canal Launch (Chauvin)",29.30100,-90.64300,29.30060,-90.64380],
+ ["Boudreaux Canal Public Launch (Chauvin)",29.39264,-90.61398,29.39230,-90.61527],
+ ["Sportsman’s Paradise (Chauvin)",29.35950,-90.62560,29.35973,-90.62518],
+ ["Lapeyrouse / Robinson Canal Launch (Chauvin)",29.30150,-90.64661,29.30136,-90.64716],
  ["CoCo Marina (Cocodrie)",29.24870,-90.66050,29.24920,-90.66000],
- ["Falgout Canal Landing / Marina (Theriot)",29.39000,-90.83000,29.38950,-90.83080],
- ["Bayou Terrebonne Public Launch (Montegut)",29.47000,-90.55500,29.46960,-90.55580],
- ["Pointe-aux-Chenes Marina (Montegut)",29.41000,-90.48000,29.40960,-90.48080]
+ ["Falgout Canal Landing / Marina (Theriot)",29.39090,-90.83350,29.39056,-90.83393],
+ ["Bayou Terrebonne Public Launch (Montegut)",29.46987,-90.55900,29.46990,-90.55952],
+ ["Pointe-aux-Chenes Marina (Montegut)",29.41640,-90.44730,29.41597,-90.44763]
 ];
 const i=Math.max(0,Math.min(SP.length-1,+(new URLSearchParams(location.search).get('i')||0)));
 const s=SP[i];
