@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QA — Cocodrie / Chauvin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+ html,body{margin:0;height:100%;font-family:Arial,sans-serif} #map{position:absolute;inset:0}
+ .hud{position:absolute;top:8px;left:8px;z-index:1000;background:rgba(0,0,0,.82);color:#fff;padding:8px 12px;border-radius:8px;font-size:14px;max-width:46%}
+ .hud b{color:#ffd24a} .hud .rd{font-family:monospace;font-size:16px;color:#19e0a0;margin-top:4px}
+ .nav{position:absolute;top:8px;right:8px;z-index:1000;display:flex;gap:6px}
+ .nav a{background:rgba(0,0,0,.82);color:#ffd24a;text-decoration:none;padding:7px 11px;border-radius:7px;font-weight:800;font-size:15px}
+ .pmark{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;display:flex;align-items:center;justify-content:center}
+ .pmark span{transform:rotate(45deg);color:#fff;font-weight:800;font-size:12px}
+</style></head><body>
+<div id="map"></div><div class="hud" id="hud"></div><div class="nav" id="nav"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ["Name", parkLat, parkLng, waterLat, waterLng] — SAME ORDER as index.html spots[].
+const SP=[
+ ["Boudreaux Canal Public Launch (Chauvin)",29.39200,-90.61100,29.39150,-90.61200],
+ ["Bayou Petit Caillou Public Ramp (Chauvin)",29.33000,-90.62800,29.32960,-90.62860],
+ ["Sportsman’s Paradise (Chauvin)",29.36000,-90.62200,29.35960,-90.62280],
+ ["Lapeyrouse / Robinson Canal Launch (Chauvin)",29.30100,-90.64300,29.30060,-90.64380],
+ ["CoCo Marina (Cocodrie)",29.24870,-90.66050,29.24920,-90.66000],
+ ["Falgout Canal Landing / Marina (Theriot)",29.39000,-90.83000,29.38950,-90.83080],
+ ["Bayou Terrebonne Public Launch (Montegut)",29.47000,-90.55500,29.46960,-90.55580],
+ ["Pointe-aux-Chenes Marina (Montegut)",29.41000,-90.48000,29.40960,-90.48080]
+];
+const i=Math.max(0,Math.min(SP.length-1,+(new URLSearchParams(location.search).get('i')||0)));
+const s=SP[i];
+const map=L.map('map',{attributionControl:false}).setView([s[1],s[2]],18);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
+function pm(c,g){return L.divIcon({className:'',html:`<div class="pmark" style="background:${c}"><span>${g}</span></div>`,iconSize:[26,26],iconAnchor:[13,26]});}
+L.marker([s[1],s[2]],{icon:pm('#d1603a','P')}).addTo(map);
+L.marker([s[3],s[4]],{icon:pm('#1f78d6','W')}).addTo(map);
+const hud=document.getElementById('hud');
+function draw(extra){hud.innerHTML=`<b>#${i} ${s[0]}</b><br>P ${s[1]}, ${s[2]}<br>W ${s[3]}, ${s[4]}${extra||''}`;}
+draw();
+const nav=document.getElementById('nav');
+const prev=Math.max(0,i-1), next=Math.min(SP.length-1,i+1);
+nav.innerHTML=`<a href="?i=${prev}">◀</a><a href="?i=${next}">▶</a>`;
+map.on('click',e=>{
+ const la=+e.latlng.lat.toFixed(5), lo=+e.latlng.lng.toFixed(5);
+ L.circleMarker(e.latlng,{radius:6,color:'#ffd24a',fillColor:'#ffd24a',fillOpacity:1}).addTo(map);
+ draw(`<div class="rd">CLICK ▶ ${la}, ${lo}</div>`);
+});
+</script></body></html>

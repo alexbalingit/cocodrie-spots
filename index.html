@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<title>Cocodrie / Chauvin Honey Holes — Boat-Launch Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  :root{ --ink:#1f2421; --cream:#f6f1e7; --gold:#c79a3b; --rust:#b5532a; --steel:#3a6b7d; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink)}
+  #map{position:absolute;inset:0;z-index:1}
+  .hdr{position:absolute;top:0;left:0;right:0;z-index:1100;background:rgba(31,36,33,.93);color:var(--cream);
+       padding:8px 12px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(4px)}
+  .hdr h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
+  .hdr .sub{font-size:11px;opacity:.85;margin-left:auto}
+  .hdr .sub a{color:var(--gold);text-decoration:none;font-weight:700}
+  .navbtn{background:var(--gold);color:#1f2421;border:none;border-radius:7px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer}
+  .panel{position:absolute;top:38px;left:0;bottom:0;width:300px;max-width:84vw;z-index:1090;
+         background:rgba(246,241,231,.98);box-shadow:2px 0 14px rgba(0,0,0,.3);overflow-y:auto;
+         transform:translateX(-105%);transition:transform .22s ease;padding:6px 0 30px}
+  .panel.open{transform:translateX(0)}
+  .panel .ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px}
+  .panel .ph b{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#555}
+  .panel .ph .cl{cursor:pointer;font-size:18px;color:#777;border:none;background:none}
+  .city h3{margin:0;padding:7px 12px 4px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;
+           color:#7a5a2a;border-bottom:1px solid #e3dccb;background:#efe7d6}
+  .spot{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ece5d4;cursor:pointer;font-size:13px}
+  .spot:hover{background:#efe7d6}
+  .spot .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+  .spot .nm{flex:1;line-height:1.25}
+  .spot .cast{flex:0 0 auto;font-size:14px;text-decoration:none}
+  .legend{position:absolute;right:10px;bottom:24px;z-index:1000;background:rgba(246,241,231,.96);
+          border-radius:10px;padding:10px 12px;font-size:12.5px;box-shadow:0 2px 10px rgba(0,0,0,.25);line-height:1.8}
+  .legend .ltitle{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;color:#555;font-weight:700}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:7px;vertical-align:middle;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+  .legend .row{white-space:nowrap;margin:2px 0}
+  .legend .key{margin-top:7px;font-size:11px;color:#555}
+  .pin{width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+       border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
+  .pin span{transform:rotate(45deg);font-size:11px;font-weight:700;color:#fff}
+  .pin.water{border-radius:50%;width:19px;height:19px;opacity:.96}
+  .pin.water span{font-size:10px}
+  .leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.5}
+  .pop h3{margin:0 0 4px;font-size:14px}
+  .pop .z{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:1px 6px;border-radius:6px;color:#fff}
+  .pop p{margin:6px 0}
+  .pop a.btn{display:inline-block;margin:3px 4px 0 0;padding:6px 9px;border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;color:#fff}
+  .pop a.park{background:#374b43} .pop a.water{background:var(--gold);color:#1f2421} .pop a.dir{background:#2b6cb0} .pop a.cast{background:#7a2f12}
+  .pop .co{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#555}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <button class="navbtn" id="navbtn">☰ Launches by area</button>
+  <h1>🎣 Cocodrie / Chauvin Honey Holes</h1>
+  <span class="sub">8 launches · 5 cast maps · <a href="logger.html">🐟 Log a catch →</a></span>
+</div>
+<div class="panel" id="panel"><div class="ph"><b>Launches by area</b><button class="cl" id="panelclose">✕</button></div><div id="citylist"></div></div>
+<div id="map"></div>
+<div class="legend">
+  <div class="ltitle">What you'll catch</div>
+  <div class="row"><span class="dot" style="background:var(--rust)"></span><b>Redfish</b> <span class="d">— marsh ponds, drains &amp; shorelines</span></div>
+  <div class="row"><span class="dot" style="background:var(--steel)"></span><b>Speckled trout</b> <span class="d">— reefs, points &amp; deeper bayous</span></div>
+  <div class="row"><span class="dot" style="background:var(--gold)"></span><b>Mixed inshore</b> <span class="d">— reds, trout, drum &amp; flounder</span></div>
+  <div class="key">📍 = launch/park · 🎣 = water at the ramp · 🎯 = cast map · tap a pin</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const CAT = {
+  R:{c:'#b5532a',label:'Redfish — ponds, drains & shorelines'},
+  T:{c:'#3a6b7d',label:'Speckled trout — reefs, points & bayous'},
+  M:{c:'#c79a3b',label:'Mixed inshore — reds, trout, drum & flounder'}
+};
+const CITY_ORDER = ['Chauvin (Bayou Petit Caillou)','Cocodrie','Dularge / Theriot','Montegut / Pointe-aux-Chenes'];
+const spots = [
+ {n:'Boudreaux Canal Public Launch ⭐ (Chauvin)',cat:'M',city:'Chauvin (Bayou Petit Caillou)',cast:'lake-boudreaux',park:[29.39200,-90.61100],water:[29.39150,-90.61200],d:'ramp — launch into Boudreaux Canal',sp:'Redfish, speckled trout, black drum, flounder',note:'FREE Terrebonne Parish ramp (opened Dec 2022) — 2 lanes, lighted, graded parking, ADA fishing dock. Best no-fee jump-off straight into Lake Boudreaux, the strongest all-around fall reds/trout water in this list. Coords approximate — verify on satellite.'},
+ {n:'Bayou Petit Caillou Public Ramp (Chauvin)',cat:'M',city:'Chauvin (Bayou Petit Caillou)',park:[29.33000,-90.62800],water:[29.32960,-90.62860],d:'roadside concrete ramp',sp:'Redfish, speckled trout, drum',note:'Free parish roadside ramp on LA-56, mid-corridor. Bare-bones (no facilities) but straight onto Bayou Petit Caillou and the Lake Boudreaux side. Coords approximate — verify on satellite.'},
+ {n:'Sportsman’s Paradise (Chauvin)',cat:'M',city:'Chauvin (Bayou Petit Caillou)',park:[29.36000,-90.62200],water:[29.35960,-90.62280],d:'marina launch (fee)',sp:'Redfish, speckled trout, drum, flounder',note:'6830 LA-56. Lodging + restaurant + charter base + launch; reopened post-Ida (confirm by phone, 985-594-2414). Runs to Robinson Canal and the bay shorelines. Coords approximate — verify on satellite.'},
+ {n:'Lapeyrouse / Robinson Canal Launch ⭐ (Chauvin)',cat:'R',city:'Chauvin (Bayou Petit Caillou)',cast:'robinson-canal',park:[29.30100,-90.64300],water:[29.30060,-90.64380],d:'seafood-dock launch + bait/grocery',sp:'Redfish, drum, flounder, some trout',note:'6890 LA-56, Lapeyrouse Seafood (985-594-2600). Public access upheld in court. Robinson Canal is one of the best-positioned runs for fall reds in interior marsh ponds. Coords approximate — verify on satellite.'},
+ {n:'CoCo Marina ⭐ (Cocodrie)',cat:'M',city:'Cocodrie',cast:'terrebonne-bay',park:[29.24870,-90.66050],water:[29.24920,-90.66000],d:'full-service marina launch (fee)',sp:'Speckled trout, redfish, drum, flounder',note:'106 Pier 56 (985-594-6626). Fuel, store/bait, lodging, restaurant, charters — the classic end-of-the-road Cocodrie jump-off to Terrebonne Bay, Sister Lake & the barrier-island passes. Coords approximate — verify on satellite.'},
+ {n:'Falgout Canal Landing / Marina ⭐ (Theriot)',cat:'T',city:'Dularge / Theriot',cast:'sister-lake',park:[29.39000,-90.83000],water:[29.38950,-90.83080],d:'public launch + paid marina (fuel/bait)',sp:'Speckled trout, redfish, drum',note:'1868 Dr. Beatrous Rd. Free bare-bones parish launch OR paid full-service marina in the same spot. Bayou Dularge → Sister Lake (Caillou Lake) → Caillou Bay — prime October trout. Coords approximate — verify on satellite.'},
+ {n:'Bayou Terrebonne Public Launch (Montegut)',cat:'M',city:'Montegut / Pointe-aux-Chenes',park:[29.47000,-90.55500],water:[29.46960,-90.55580],d:'roadside parish ramp',sp:'Redfish, speckled trout, drum',note:'LA-55 in Montegut — free parish ramp onto Bayou Terrebonne, opening east toward Lake Barre and east Terrebonne Bay. Coords approximate — verify on satellite.'},
+ {n:'Pointe-aux-Chenes Marina ⭐ (Montegut)',cat:'R',city:'Montegut / Pointe-aux-Chenes',cast:'pac-wma',park:[29.41000,-90.48000],water:[29.40960,-90.48080],d:'marina launch + store (fee)',sp:'Redfish, drum, flounder, some trout',note:'1650 LA-665. Strong fall reds/trout reputation; gateway to the Pointe-aux-Chenes WMA marsh ponds — sight-fishing reds on falling tide. Coords approximate — verify on satellite.'}
+];
+const map = L.map('map',{zoomControl:true}).setView([29.36,-90.62],10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'&copy; OpenStreetMap'}).addTo(map);
+function pin(color, glyph, water){
+  return L.divIcon({className:'',
+    html:`<div class="pin${water?' water':''}" style="background:${color}"><span>${glyph}</span></div>`,
+    iconSize:water?[19,19]:[24,24], iconAnchor:water?[10,10]:[12,24], popupAnchor:[0,water?-10:-22]});
+}
+function gmaps(ll){return `https://www.google.com/maps/search/?api=1&query=${ll[0]},${ll[1]}`;}
+function gdir(ll){return `https://www.google.com/maps/dir/?api=1&destination=${ll[0]},${ll[1]}`;}
+const bounds = [];
+spots.forEach((s,i)=>{
+  const col = CAT[s.cat].c; bounds.push(s.park, s.water);
+  L.polyline([s.park,s.water],{color:col,weight:2,dashArray:'4,5',opacity:.7}).addTo(map);
+  const castBtn = s.cast ? `<a class="btn cast" href="sat.html?id=${s.cast}" target="_blank" rel="noopener">🎯 Cast map</a>` : '';
+  const html = `<div class="pop">
+     <h3>${s.n}</h3>
+     <span class="z" style="background:${col}">${CAT[s.cat].label}</span>
+     <p>${s.note}</p>
+     <p style="margin:6px 0"><b>🐟 Fish here:</b> ${s.sp}</p>
+     <p class="co">📍 launch ${s.park[0]}, ${s.park[1]}<br>🎣 water ${s.water[0]}, ${s.water[1]} &nbsp;·&nbsp; ${s.d}</p>
+     <a class="btn park" href="${gmaps(s.park)}" target="_blank" rel="noopener">📍 Launch pin</a>
+     <a class="btn water" href="${gmaps(s.water)}" target="_blank" rel="noopener">🎣 Water pin</a>
+     <a class="btn dir" href="${gdir(s.park)}" target="_blank" rel="noopener">🧭 Navigate</a>
+     ${castBtn}
+   </div>`;
+  const m = L.marker(s.park,{icon:pin(col,'📍',false)}).addTo(map).bindPopup(html,{maxWidth:262});
+  L.marker(s.water,{icon:pin(col,'🎣',true)}).addTo(map).bindPopup(html,{maxWidth:262});
+  s._m = m;
+});
+map.fitBounds(bounds,{padding:[55,55]});
+
+// ---- area directory panel ----
+const panel=document.getElementById('panel'), cl=document.getElementById('citylist');
+let html='';
+CITY_ORDER.forEach(city=>{
+  const inCity = spots.filter(s=>s.city===city);
+  if(!inCity.length) return;
+  html += `<div class="city"><h3>${city} <span style="color:#aa9;font-weight:600">(${inCity.length})</span></h3>`;
+  inCity.forEach(s=>{
+    const idx = spots.indexOf(s);
+    const cast = s.cast ? `<a class="cast" href="sat.html?id=${s.cast}" target="_blank" rel="noopener" title="cast map">🎯</a>` : '';
+    html += `<div class="spot" data-idx="${idx}"><span class="dot" style="background:${CAT[s.cat].c}"></span><span class="nm">${s.n.replace(/ \(.*\)/,'')}</span>${cast}</div>`;
+  });
+  html += `</div>`;
+});
+cl.innerHTML = html;
+const legendEl=document.querySelector('.legend');
+function setPanel(open){ panel.classList.toggle('open',open); legendEl.style.display=(open && window.innerWidth<760)?'none':''; }
+window.addEventListener('resize',()=>{ if(window.innerWidth>=760) legendEl.style.display=''; });
+cl.querySelectorAll('.spot').forEach(el=>{
+  el.addEventListener('click',e=>{
+    if(e.target.classList.contains('cast')) return;
+    const s = spots[+el.dataset.idx];
+    setPanel(false);
+    map.flyTo(s.park, 14, {duration:.8});
+    setTimeout(()=>s._m.openPopup(), 850);
+  });
+});
+document.getElementById('navbtn').onclick=()=>setPanel(!panel.classList.contains('open'));
+document.getElementById('panelclose').onclick=()=>setPanel(false);
+</script>
+</body>
+</html>
